@@ -117,17 +117,25 @@ const Login = () => {
           toast.error(response.data.message)
         }
       } else {
+        // LOGIN
         const response = await axios.post('http://localhost:4000/api/auth/login', {
           email: formData.email.toLowerCase().trim(),
           password: formData.password
         })
         
         if (response.data.success) {
+          // Sauvegarder le token
           localStorage.setItem('token', response.data.token)
+          
           toast.success('Connexion réussie!')
-          setTimeout(() => {
-            navigate('/')
-          }, 1000)
+          
+          // ⭐ CHANGEMENT IMPORTANT : Forcer le rechargement complet
+          // Rediriger vers la page d'accueil ET recharger
+          window.location.href = '/'
+          
+          // Alternative si la première ne fonctionne pas :
+          // navigate('/')
+          // window.location.reload()
         } else {
           toast.error(response.data.message)
         }

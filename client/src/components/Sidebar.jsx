@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
-import { Home, FileText, BookOpen, Award, Users, Bell, Settings, Menu, X, LogOut, LogIn, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, FileText, BookOpen, Award, Users, Bell, Settings, Menu, X, LogOut, LogIn, CheckCircle, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
@@ -47,8 +47,21 @@ const Sidebar = () => {
 
   const fetchUserData = async () => {
     try {
+      // ⭐ IMPORTANT: Vérifier d'abord si un token existe
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setIsLoggedIn(false);
+        setUserData(null);
+        setIsLoading(false);
+        return;
+      }
+
       const response = await axios.get(`${API_URL}/api/user/data`, {
-        withCredentials: true
+        withCredentials: true,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (response.data.success) {
@@ -57,10 +70,17 @@ const Sidebar = () => {
       } else {
         setIsLoggedIn(false);
         setUserData(null);
+        // Supprimer le token invalide
+        localStorage.removeItem('token');
       }
     } catch (error) {
+      console.error('Fetch user data error:', error);
       setIsLoggedIn(false);
       setUserData(null);
+      // Si erreur 401, supprimer le token
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -74,21 +94,37 @@ const Sidebar = () => {
 
       if (data.success) {
         toast.success('Déconnexion réussie');
-        setIsLoggedIn(false);
-        setUserData(null);
-        localStorage.removeItem('token');
-        navigate('/login');
       }
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error('Erreur lors de la déconnexion');
+    } finally {
+      // Toujours nettoyer localement même si l'appel API échoue
+      setIsLoggedIn(false);
+      setUserData(null);
+      localStorage.removeItem('token');
+      
+      // Redirection avec rechargement complet
+      window.location.href = '/login';
     }
   };
 
   const sendVerificationOtp = async () => {
     try {
-      axios.defaults.withCredentials = true;
-      const { data } = await axios.post(`${API_URL}/api/auth/send-verify-otp`);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        toast.error('Vous devez être connecté');
+        navigate('/login');
+        return;
+      }
+
+      const { data } = await axios.post(`${API_URL}/api/auth/send-verify-otp`, {}, {
+        withCredentials: true,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       if (data.success) {
         navigate('/email-verify');
         toast.success(data.message);
@@ -185,7 +221,7 @@ const Sidebar = () => {
               
               {/* Tooltip for collapsed state */}
               {isCollapsed && (
-                <div className="hidden md:block absolute left-full ml-2 px-2 py-1 bg-slate-700 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                <div className="hidden md:block absolute left-full ml-2 px-2 py-1 bg-slate-700 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
                   {item.label}
                 </div>
               )}
@@ -226,7 +262,7 @@ const Sidebar = () => {
             {/* Verification Status Badge */}
             {!isCollapsed && (
               <>
-                {(userData.IsAccountVerified === true || userData.IsAccountVerified === 'true' || userData.IsAccountVerified === 1 || userData.IsAccountVerified) ? (
+                {(userData.isAccountVerified === true || userData.isAccountVerified === 'true' || userData.isAccountVerified === 1 || userData.isAccountVerified) ? (
                   <div className="flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/40 rounded-lg shadow-sm">
                     <div className="flex items-center justify-center w-5 h-5 bg-green-500 rounded-full">
                       <CheckCircle size={14} className="text-white" />
@@ -251,7 +287,7 @@ const Sidebar = () => {
             {/* Collapsed Verification Icon */}
             {isCollapsed && (
               <div className="hidden md:flex justify-center">
-                {(userData.IsAccountVerified === true || userData.IsAccountVerified === 'true' || userData.IsAccountVerified === 1 || userData.IsAccountVerified) ? (
+                {(userData.isAccountVerified === true || userData.isAccountVerified === 'true' || userData.isAccountVerified === 1 || userData.isAccountVerified) ? (
                   <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                     <CheckCircle size={16} className="text-white" />
                   </div>
