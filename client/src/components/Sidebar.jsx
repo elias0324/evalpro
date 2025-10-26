@@ -5,6 +5,9 @@ import { Home, FileText, BookOpen, Award, Users, Bell, Settings, Menu, X, LogOut
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
+// 🔥 API URL from environment variable
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
 const Sidebar = () => {
   const navigate = useNavigate();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -44,7 +47,7 @@ const Sidebar = () => {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/user/data', {
+      const response = await axios.get(`${API_URL}/api/user/data`, {
         withCredentials: true
       });
       
@@ -65,7 +68,7 @@ const Sidebar = () => {
 
   const handleLogout = async () => {
     try {
-      const { data } = await axios.post('http://localhost:4000/api/auth/logout', {}, {
+      const { data } = await axios.post(`${API_URL}/api/auth/logout`, {}, {
         withCredentials: true
       });
 
@@ -85,7 +88,7 @@ const Sidebar = () => {
   const sendVerificationOtp = async () => {
     try {
       axios.defaults.withCredentials = true;
-      const { data } = await axios.post('http://localhost:4000/api/auth/send-verify-otp');
+      const { data } = await axios.post(`${API_URL}/api/auth/send-verify-otp`);
       if (data.success) {
         navigate('/email-verify');
         toast.success(data.message);
